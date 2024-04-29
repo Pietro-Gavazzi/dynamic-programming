@@ -43,3 +43,4 @@ def markovDecision(layout,circle):
     
     
     return [expec, dice]
+
