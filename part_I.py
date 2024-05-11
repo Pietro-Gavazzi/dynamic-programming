@@ -1,3 +1,4 @@
+# Chat GPT was used 
 """
 LINFO_2275: Data mining and Decision making
 Project Part I: Snakes and Ladder
