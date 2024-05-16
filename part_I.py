@@ -1,4 +1,3 @@
-# Chat GPT was used 
 """
 LINFO_2275: Data mining and Decision making
 Project Part I: Snakes and Ladder
@@ -7,6 +6,93 @@ authors: Pietro GAVAZZI, Francis JACOBS, Alex WLODAWER
 """
 
 import numpy as np
+
+def transition(state, action, layout, circle):
+
+    def roll_security_dice():
+        trap_triggered = False
+        dice_roll = np.random.choice([0, 1])
+        return (dice_roll, trap_triggered)
+
+    def roll_normal_dice():
+        trap_triggered = np.random.choice([True, False])
+        dice_roll = np.random.choice([0, 1, 2])
+        return (dice_roll, trap_triggered) 
+
+
+    def roll_risky_dice():
+        trap_triggered = True
+        dice_roll = np.random.choice([0, 1, 2, 3])
+        return (dice_roll, trap_triggered)
+    
+
+    roll_dice_functions = {0:roll_security_dice, 1:roll_normal_dice, 2:roll_risky_dice} 
+
+
+    (current_position, current_skip_next_turn) = state
+    new_skip_next_turn = False
+
+    if current_position == 14:
+        print("nice")
+        return (current_position, new_skip_next_turn)
+    
+    if current_skip_next_turn:
+        return (current_position, new_skip_next_turn)
+    
+
+    # roll dices
+    roll_function = roll_dice_functions[action]
+    (dice_roll, trap_triggered) =  roll_function()
+
+    # find new position
+    if dice_roll==0:
+        new_position = current_position
+    else: # if dice roll not 0
+        if (current_position == 2):
+                if np.random.choice([True, False]):
+                    new_position = current_position + dice_roll
+                else:
+                    new_position = 9+dice_roll
+
+        elif  current_position in range(10): # but not 2
+
+            new_position = current_position+dice_roll
+
+            if new_position > 10:
+                if circle:
+                    new_position -= 10
+                else:
+                    new_position = 14
+
+        elif current_position in range(10, 14):
+            new_position = current_position+dice_roll
+
+            if new_position > 14:
+                if circle:
+                    new_position -= 14
+                else:
+                    new_position = 14
+
+    # Deal with the traps
+    if trap_triggered:
+
+        trap = layout[new_position]
+
+        if trap == 4:
+            trap = np.random.choice([1, 2, 3])
+
+        if   trap == 1:
+            new_position = 0
+
+        elif trap == 2:
+            if new_position in range(10, 13):
+                new_position -= 7 # -7 -3 = -10
+            new_position = max(0, new_position - 3)
+
+        elif trap == 3:
+            new_skip_next_turn=True
+
+    return (new_position, new_skip_next_turn)
 
 def expected_policy_value(state, action, V, layout, circle, alpha):
 
@@ -207,11 +293,66 @@ def markovDecision(layout,circle):
     
     return [expec, dice]
         
-circle = False
-layout = np.ones(15)*4
+
+#%%
+# Simulate games
+
+# circle = False
+
+# layouts = []
+# for i in range(5):
+#     layout = np.ones(15)*i
+#     layout[0] = 0
+#     layout[14] = 0
+#     layouts += [layout]
+
+# for lay in layouts:
+#     for cir in [False, True]:
+        
+#         E, D = markovDecision(lay, cir)
+#         print("==========================================================================")
+#         print("Layout",lay,"Circle =",cir)
+#         # print(E)
+#         # print("=============")
+#         print(D)
+#         print("Expected number of turns : {:.4f}".format(E[0]))
+#         # print("==========================================================================")
+
+#%%
+layout = np.random.choice([0, 4], 15, p=[0.5, 0.5])
 layout[0] = 0
 layout[14] = 0
+#%%
+
+circle = True
 
 E, D = markovDecision(layout, circle)
-for i in range(E.size):
-    print("Etat {} : Expected={:.2f}, Dice={}".format(i, E[i], D[i]))
+print("==========================================================================")
+print("Layout",layout,"Circle =",circle)
+# print(E)
+# print("=============")
+print(D)
+print("Expected number of turns : {:.4f}".format(E[0]))
+print("==========================================================================")
+
+#%%
+N  = 10000 #number of games simulated
+
+die = 2
+import time
+
+turns = np.zeros(N)
+tic = time.time()
+for i in range(N):
+    state = (0,False)
+    count = 0
+    while(state[0] != 14):
+        count += 1
+        die = np.random.choice([0, 1, 2])
+        state = transition(state, D[state[0]], layout, circle)
+    # print("Game finished in", count, "turns")
+    turns[i] =  count
+tac = time.time()
+print("===========================================================================")
+print("Experimental number of turns :", np.mean(turns),", found in", tac - tic,"s")
+print("Max turns =", np.max(turns), "min turns =", np.min(turns))
