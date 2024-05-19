@@ -169,8 +169,8 @@ def expected_probability_win(state, action, P, layout, circle, nb_turn, nb_turn_
     
 
 # this function calculates the [probability of win of player 1] (which is equal to 1-[probability of win of the player 2])
-def min_max(layout, circle, theta):
-    
+def min_max(layout, circle, n):
+
     # we define the different states as follows:
     # (my_place, other_place, whoseturn) = state
     possible_places = []
@@ -203,9 +203,7 @@ def min_max(layout, circle, theta):
         best_policy[state] = 0
         nb_turn[state] = np.array([0., 0.])
     
-    delta = 2*theta
-    while delta>=theta:
-        print(delta)
+    for _ in range(n):
         delta = 0
         for state in possible_states:
             v = P[state]
@@ -232,7 +230,7 @@ def min_max(layout, circle, theta):
                         nb_turn[state] = new_nb_turn
                 P[state] = maxv
             delta = max(abs(v-P[state]), delta)
-    print(delta)
+        print(delta)
     return P, best_policy, nb_turn
         
 
@@ -257,7 +255,7 @@ layout = np.random.choice([1, 2, 3, 4], 15)
 layout[0] = 0
 layout[14] = 0
 
-P, best_policy, nb_turn = min_max(layout, circle, 0.000000001)
+P, best_policy, nb_turn = min_max(layout, circle, 100)
 
 print(nb_turn)
 # %%
