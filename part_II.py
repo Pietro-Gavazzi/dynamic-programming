@@ -142,29 +142,37 @@ def expected_probability_win(state, action, P, layout, circle, nb_turn, nb_turn_
 
     (my_place, other_place, whoseturn) = state
 
+    # If other_player is in position 14, that means that other_player won 
+    # Thus if it is the turn of player 2, we return 1 because player 1 wins with probability 1, and if it is the turn of player 1 we return 0
+    # The number of turns that the current player is expected to take to reach the position 14 is thus equal to the number of turns when he plays alone from his place,
+    # the other player is already in position 14 so he takes 0 turns
     if other_place[0] == 14:
         if whoseturn==2: return 1, np.array([nb_turn_solo[my_place], 0.])
         else: return 0, np.array([nb_turn_solo[my_place], 0.])
     
+    # we calculate the expected new place of the playere whose turn is 
     list_expected_my_new_places = expected_new_places(my_place, action, layout, circle)
+
 
     new_probability  = 0
     new_nb_turn = np.array([1., 0.])
     
     for (p_my_new_place, my_new_place) in list_expected_my_new_places:
+
         new_probability += p_my_new_place*P[(other_place, my_new_place, switch_player(whoseturn))] 
-        b = nb_turn[(other_place, my_new_place, switch_player(whoseturn))]
-        new_nb_turn +=p_my_new_place*np.array([b[1], b[0]])
+
+        nb_turn_next_state = nb_turn[(other_place, my_new_place, switch_player(whoseturn))]
+        new_nb_turn +=p_my_new_place*np.array([nb_turn_next_state[1], nb_turn_next_state[0]])
 
     return new_probability, new_nb_turn
 
     
 
+# this function calculates the [probability of win of player 1] (which is equal to 1-[probability of win of the player 2])
 def min_max(layout, circle, theta):
-    # probabilité de gagner du joueur 1
-    # if whoseturn==1:-> max
-    # if whoseturn==2:-> min
     
+    # we define the different states as follows:
+    # (my_place, other_place, whoseturn) = state
     possible_places = []
     for i in range(14):
         if layout[i]>=3:
@@ -173,7 +181,6 @@ def min_max(layout, circle, theta):
         else:
             possible_places.append((i, False))
 
-    # (my_place, other_place, whoseturn) = state
     possible_states = []
     for place1 in possible_places:
         for place2 in possible_places:
