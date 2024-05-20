@@ -23,6 +23,8 @@ circle = False
 np.random.seed(42)
 layout = np.random.choice([1, 2, 3, 4], 15)
 
+print(layout)
+
 layout = np.ones(15)*4
 
 layout[0] = 0
@@ -30,14 +32,18 @@ layout[14] = 0
 
 P, best_policy, nb_turn = min_max(layout, circle, 100)
 
-_, dice = value_iteration(layout, circle, 0.0001, alpha=1)
+E, dice = value_iteration(layout, circle, 0.0001, alpha=1)
     
-for key, value in best_policy.items():
-    if(key[2] == 2 and key[1][0] != 14 and not key[0][1] and value != dice[(key[0])]):
-        # print(key, value)
-        print(key[0][0]+1, "& ",key[1][0]+1,"& ",value, "&", dice[(key[0])], " \\\\")
+# for key, value in best_policy.items():
+#     if(key[2] == 2 and key[1][0] != 14 and not key[0][1] and not key[1][1] and value != dice[(key[0])]):
+#         # print(key, value)
+#         print(key[0][0]+1, "& ",key[1][0]+1,"& ",value, "&", dice[(key[0])], " \\\\")
 
-print(dice)
+# print(dice)
 
 #%%
-print(P)
+print(E)
+for key, value in nb_turn.items():
+    if(key[0][0] == 0):
+        print(key, value)
+    # print(key[0][0]+1, "& ",key[1][0]+1,"& ",value, "&", dice[(key[0])], " \\\\")
