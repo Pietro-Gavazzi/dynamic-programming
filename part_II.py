@@ -7,123 +7,11 @@ authors: Pietro GAVAZZI, Francis JACOBS, Alex WLODAWER
 
 
 import numpy as np
-from part_I import value_iteration
+from part_I import value_iteration, expected_new_places
 
 
 
 # %%     
-
-#  Calculates from an initial place the expected new places and there probabilities after rolling the dice and encountering traps.
-def expected_new_places(state, action, layout, circle):
-
-    # Nested functions for different dice rolls and their probabilities
-    def rolls_security_dice():
-        possible_trap_triggered = [False]
-        possible_dice_rolls = [0, 1]
-        p = 1/2
-        return [(p, trap_triggered, dice_roll) for trap_triggered in possible_trap_triggered for dice_roll in possible_dice_rolls]    
-
-    def rolls_normal_dice():
-        possible_trap_triggered = [True, False]
-        possible_dice_rolls = [0, 1, 2]
-        p = 1/6
-        return [(p, trap_triggered, dice_roll) for trap_triggered in possible_trap_triggered for dice_roll in possible_dice_rolls]    
-
-    def rolls_risky_dice():
-        possible_trap_triggered = [True]
-        possible_dice_rolls = [0, 1, 2, 3]
-        p = 1/4
-        return [(p, trap_triggered, dice_roll) for trap_triggered in possible_trap_triggered for dice_roll in possible_dice_rolls]    
-
-    rolls_dice_functions = {0:rolls_security_dice, 1:rolls_normal_dice, 2:rolls_risky_dice} 
-
-
-    (current_position, current_skip_next_turn) = state
-
-    if current_skip_next_turn:
-        new_place = (current_position, False)
-        return [(1, new_place)]
-    
-
-    # roll dices
-    roll_function = rolls_dice_functions[action]
-    list_rolls =  roll_function()
-
-    list_new_positions_before_traps = []
-
-    for (p, trap_triggered, dice_roll) in list_rolls:
-        # find new position
-        if dice_roll==0:
-            new_position_before_trap = current_position
-            list_new_positions_before_traps.append((p, new_position_before_trap, trap_triggered))
-        else: # dice roll is not 0
-            if (current_position == 2):
-                    new_position_before_trap = current_position + dice_roll
-                    list_new_positions_before_traps.append((p*1/2, new_position_before_trap, trap_triggered))
-                    new_position_before_trap = 9+dice_roll
-                    list_new_positions_before_traps.append((p*1/2, new_position_before_trap, trap_triggered))
-
-
-            elif  current_position in range(10): # but not 2
-                new_position_before_trap = current_position+dice_roll
-                if new_position_before_trap > 10:
-                    if circle:
-                        new_position_before_trap -= 10
-                    else:
-                        new_position_before_trap = 14
-                list_new_positions_before_traps.append((p, new_position_before_trap, trap_triggered))
-
-            elif current_position in range(10, 14):
-                new_position_before_trap = current_position+dice_roll
-                if new_position_before_trap > 14:
-                    if circle:
-                        new_position_before_trap -=14
-                    else:
-                        new_position_before_trap = 14
-                list_new_positions_before_traps.append((p, new_position_before_trap, trap_triggered))
-
-    list_new_places_after_traps = []
-
-    for (p, new_position_before_trap, trap_triggered) in list_new_positions_before_traps:
-        # Deal with the traps
-        trap = layout[new_position_before_trap]
-
-        if  (not trap_triggered) or (trap == 0):
-            new_skip_next_turn = False
-            new_position_after_trap = new_position_before_trap
-            list_new_places_after_traps.append((p, (new_position_after_trap, new_skip_next_turn)))
-        else:
-            trap_list = []
-
-            if trap == 4:
-                trap_list.append(1)
-                trap_list.append(2)
-                trap_list.append(3)
-                p/=3
-            else:
-                trap_list.append(trap)
-            
-            for trap in trap_list:
-                if   trap == 1:
-                    new_position_after_trap = 0
-                    new_skip_next_turn = False
-
-                elif trap == 2:
-                    new_position_after_trap = new_position_before_trap
-                    if new_position_after_trap in range(10, 13):
-                        new_position_after_trap -= 7 # -7 -3 = -10
-                    new_position_after_trap = max(0, new_position_after_trap - 3)
-                    new_skip_next_turn = False
-
-
-                elif trap == 3:
-                    new_position_after_trap = new_position_before_trap
-                    new_skip_next_turn=True
-
-                list_new_places_after_traps.append((p, (new_position_after_trap, new_skip_next_turn)))
-
-    return list_new_places_after_traps
-
 
 
 # Computes the expected probability of winning for the current player based on the given state and action.
@@ -194,9 +82,8 @@ def min_max(layout, circle, n):
     best_policy = {}
     nb_turn = {}
 
-
-
     nb_turn_solo, _ = value_iteration(layout, circle, 0.001, alpha=1)
+
 
     for state in possible_states:
         P[state] = 0
@@ -204,6 +91,7 @@ def min_max(layout, circle, n):
         nb_turn[state] = np.array([0., 0.])
     
     for _ in range(n):
+        # print(_)
         delta = 0
         for state in possible_states:
             v = P[state]
@@ -230,6 +118,7 @@ def min_max(layout, circle, n):
                         nb_turn[state] = new_nb_turn
                 P[state] = maxv
             delta = max(abs(v-P[state]), delta)
+        # print(delta)
     return P, best_policy, nb_turn
         
 

@@ -1,3 +1,5 @@
+#%%
+
 """
 LINFO_2275: Data mining and Decision making
 Project Part I: Snakes and Ladder
@@ -6,6 +8,10 @@ authors: Pietro GAVAZZI, Francis JACOBS, Alex WLODAWER
 """
 
 import numpy as np
+
+
+#%%
+
 
 def transition(state, action, layout, circle):
 
@@ -64,6 +70,10 @@ def transition(state, action, layout, circle):
                 else:
                     new_position = 14
 
+            elif new_position == 10:
+                new_position = 14
+
+
         elif current_position in range(10, 14):
             new_position = current_position+dice_roll
 
@@ -94,8 +104,17 @@ def transition(state, action, layout, circle):
 
     return (new_position, new_skip_next_turn)
 
-def expected_policy_value(state, action, V, layout, circle, alpha):
 
+
+
+    
+#%%
+
+
+#  Calculates from an initial place the expected new places and there probabilities after rolling the dice and encountering traps.
+def expected_new_places(state, action, layout, circle):
+
+    # Nested functions for different dice rolls and their probabilities
     def rolls_security_dice():
         possible_trap_triggered = [False]
         possible_dice_rolls = [0, 1]
@@ -108,7 +127,6 @@ def expected_policy_value(state, action, V, layout, circle, alpha):
         p = 1/6
         return [(p, trap_triggered, dice_roll) for trap_triggered in possible_trap_triggered for dice_roll in possible_dice_rolls]    
 
-
     def rolls_risky_dice():
         possible_trap_triggered = [True]
         possible_dice_rolls = [0, 1, 2, 3]
@@ -118,21 +136,12 @@ def expected_policy_value(state, action, V, layout, circle, alpha):
     rolls_dice_functions = {0:rolls_security_dice, 1:rolls_normal_dice, 2:rolls_risky_dice} 
 
 
-
-    Q = 0
     (current_position, current_skip_next_turn) = state
 
-    if current_position == 14:
-        new_state = (14, False)
-        Q +=  0 + alpha*V[new_state]
-        return Q 
-    
     if current_skip_next_turn:
-        new_state = (current_position, False)
-        Q += 1 + alpha*V[new_state]
-        return Q
+        new_place = (current_position, False)
+        return [(1, new_place)]
     
-
 
     # roll dices
     roll_function = rolls_dice_functions[action]
@@ -155,11 +164,16 @@ def expected_policy_value(state, action, V, layout, circle, alpha):
 
             elif  current_position in range(10): # but not 2
                 new_position_before_trap = current_position+dice_roll
-                if new_position_before_trap > 10:
+                if new_position_before_trap >10:
                     if circle:
                         new_position_before_trap -= 10
                     else:
                         new_position_before_trap = 14
+
+                elif new_position_before_trap==10:
+                    
+                    new_position_before_trap = 14
+
                 list_new_positions_before_traps.append((p, new_position_before_trap, trap_triggered))
 
             elif current_position in range(10, 14):
@@ -171,7 +185,7 @@ def expected_policy_value(state, action, V, layout, circle, alpha):
                         new_position_before_trap = 14
                 list_new_positions_before_traps.append((p, new_position_before_trap, trap_triggered))
 
-    list_new_positions_after_traps = []
+    list_new_places_after_traps = []
 
     for (p, new_position_before_trap, trap_triggered) in list_new_positions_before_traps:
         # Deal with the traps
@@ -180,7 +194,7 @@ def expected_policy_value(state, action, V, layout, circle, alpha):
         if  (not trap_triggered) or (trap == 0):
             new_skip_next_turn = False
             new_position_after_trap = new_position_before_trap
-            list_new_positions_after_traps.append((p, (new_position_after_trap, new_skip_next_turn)))
+            list_new_places_after_traps.append((p, (new_position_after_trap, new_skip_next_turn)))
         else:
             trap_list = []
 
@@ -209,15 +223,25 @@ def expected_policy_value(state, action, V, layout, circle, alpha):
                     new_position_after_trap = new_position_before_trap
                     new_skip_next_turn=True
 
-                list_new_positions_after_traps.append((p, (new_position_after_trap, new_skip_next_turn)))
+                list_new_places_after_traps.append((p, (new_position_after_trap, new_skip_next_turn)))
 
-    # print(list_new_positions_after_traps)
-    for (p, new_state) in list_new_positions_after_traps:
-        Q +=  p*(1 + alpha*V[new_state])
+    return list_new_places_after_traps
 
+
+
+def expected_policy_value(state, action, V, layout, circle, alpha):
+
+    if state[0] == 14:
+        return 0
+ 
+    list_expected_my_new_places = expected_new_places(state, action, layout, circle)
+
+    Q = 0
+    for (p_my_new_place, my_new_place) in list_expected_my_new_places:
+        Q += p_my_new_place*(1+alpha*V[my_new_place])
     return Q
 
-    
+
 def value_iteration(layout, circle, theta, alpha):
 
     possible_states = []
